@@ -19,7 +19,10 @@ public class Menu : Interactable
 
     public override void Interact()
     {
-        StartCoroutine(Outro());
+        if (!isPlaying)
+        {
+            isPlaying = StartCoroutine(Outro()) != null ? true : false;
+        }
     }
 
     private IEnumerator Intro()
@@ -33,6 +36,8 @@ public class Menu : Interactable
 
     private IEnumerator Outro()
     {
+        GetComponent<AudioSource>().Play();
+
         while (fadeAlpha < 1)
         {
             fadeAlpha += Time.deltaTime;

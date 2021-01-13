@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class Sequencer : MonoBehaviour
 {
-    public AudioClip[] audioClips = new AudioClip[3];
+    public AudioClip[] audioClips = new AudioClip[6];
 
     public Color correct   = Color.HSVToRGB(0.3f, 1, 1);
     public Color incorrect = Color.HSVToRGB(1.0f, 1, 1);
