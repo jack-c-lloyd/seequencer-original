@@ -1,19 +1,22 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class Menu : Interactable
 {
     public Texture2D fadeImage;
+    public AudioSource theme;
+
     private float fadeAlpha = 1;
-    public AudioSource audioSource;
     private float volume = 1;
+
+    private AudioSource audioSource;
 
     public bool isPlaying { get; private set; } = false;
 
     private void Awake()
     {
+        audioSource = GetComponent<AudioSource>();
         StartCoroutine(Intro());
     }
 
@@ -36,13 +39,13 @@ public class Menu : Interactable
 
     private IEnumerator Outro()
     {
-        GetComponent<AudioSource>().Play();
+        audioSource.Play();
 
         while (fadeAlpha < 1)
         {
             fadeAlpha += Time.deltaTime;
             volume -= Time.deltaTime;
-            audioSource.volume = volume;
+            theme.volume = volume;
             yield return null;
         }
 

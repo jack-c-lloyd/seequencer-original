@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -11,6 +10,17 @@ using UnityEngine;
 public class Pad : Interactable
 {
     public Light light;
+
+    private AudioSource audioSource;
+    private MeshRenderer meshRenderer;
+    private Director director;
+
+    private void Awake()
+    {
+        audioSource = GetComponent<AudioSource>();
+        meshRenderer = GetComponent<MeshRenderer>();
+        director = FindObjectOfType<Director>();
+    }
 
     public bool isPlaying { get; private set; } = false;
 
@@ -24,19 +34,19 @@ public class Pad : Interactable
 
     private IEnumerator IEPlay(AudioClip audioClip, Color color, float duration)
     {
-        GetComponent<AudioSource>().clip = audioClip;
-        GetComponent<AudioSource>().Play();
-        GetComponent<MeshRenderer>().material.color = color;
+        audioSource.clip = audioClip;
+        audioSource.Play();
+        meshRenderer.material.color = color;
         light.color = color;
         light.enabled = true;
         yield return new WaitForSeconds(duration);
         light.enabled = false;
-        GetComponent<MeshRenderer>().material.color = Color.grey;
+        meshRenderer.material.color = Color.grey;
         isPlaying = false;
     }
 
     public override void Interact()
     {
-        FindObjectOfType<Director>().Guess(this);
+        director.Attempt(this);
     }
 }

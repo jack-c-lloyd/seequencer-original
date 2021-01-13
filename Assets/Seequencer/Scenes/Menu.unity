@@ -805,6 +805,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1157852396123887912, guid: 356ee56834f5d461db763903346d839d,
+        type: 3}
+      propertyPath: m_Text
+      value: BEGIN!
+      objectReference: {fileID: 0}
     - target: {fileID: 1157852396123887925, guid: 356ee56834f5d461db763903346d839d,
         type: 3}
       propertyPath: m_Delegates.Array.size
@@ -878,6 +883,11 @@ PrefabInstance:
     - target: {fileID: 1157852396123887926, guid: 356ee56834f5d461db763903346d839d,
         type: 3}
       propertyPath: audioSource
+      value: 
+      objectReference: {fileID: 1501221145}
+    - target: {fileID: 1157852396123887926, guid: 356ee56834f5d461db763903346d839d,
+        type: 3}
+      propertyPath: theme
       value: 
       objectReference: {fileID: 1501221145}
     - target: {fileID: 1157852397551790906, guid: 356ee56834f5d461db763903346d839d,

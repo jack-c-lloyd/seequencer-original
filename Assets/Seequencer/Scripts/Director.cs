@@ -1,27 +1,41 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+[DisallowMultipleComponent]
+
+[RequireComponent(typeof(AudioSource))]
+
 public class Director : MonoBehaviour
 {
-    public TextMesh count;
+    [Range(float.Epsilon, 2.1f)] public float shortDuration = 0.7f;
+    [Range(float.Epsilon, 2.1f)] public float mediumDuration = 1.4f;
+    [Range(float.Epsilon, 2.1f)] public float longDuration = 2.1f;
+
+    public TextMesh textMesh;
     public Sequencer sequencer;
     public Texture2D fadeImage;
 
     private float fadeAlpha = 1;
-    private bool waiting = false;
-    private bool correct = true;
+    private bool isIdle = false;
+    private bool isCorrect = true;
+
+    private AudioSource audioSource;
+
+    private void Awake()
+    {
+        audioSource = GetComponent<AudioSource>();
+    }
 
     private void Start()
     {
-        StartCoroutine(Play());
+        StartCoroutine(Direct());
     }
 
-    private IEnumerator Play()
+    private IEnumerator Direct()
     {
-        uint stage = 1;
         uint lives = 3;
+        uint stage = 1;
 
         sequencer.DisableAll();
 
@@ -30,29 +44,30 @@ public class Director : MonoBehaviour
             PlayerPrefs.SetInt("HIGHSCORE", 0);
         }
 
-        count.text = "- HIGHSCORE -\nSTAGE " + PlayerPrefs.GetInt("HIGHSCORE") + "!";
+        textMesh.text = "- HIGHSCORE -\nSTAGE " + PlayerPrefs.GetInt("HIGHSCORE") + "!";
 
-        while (fadeAlpha > 0)
+        while (fadeAlpha > float.Epsilon)
         {
             fadeAlpha -= Time.deltaTime;
             yield return null;
         }
 
-        yield return new WaitForSeconds(2.1f);
+        yield return new WaitForSeconds(longDuration);
 
         while (true)
         {
-            correct = true;
+            isCorrect = true;
+            isIdle = true;
 
-            count.text = "STAGE " + stage + "!";
-            yield return new WaitForSeconds(1.4f);
-            count.text = "3";
-            yield return new WaitForSeconds(0.7f);
-            count.text = "2";
-            yield return new WaitForSeconds(0.7f);
-            count.text = "1";
-            yield return new WaitForSeconds(0.7f);
-            count.text = "";
+            textMesh.text = "STAGE " + stage + "!";
+            yield return new WaitForSeconds(mediumDuration);
+            textMesh.text = "3";
+            yield return new WaitForSeconds(shortDuration);
+            textMesh.text = "2";
+            yield return new WaitForSeconds(shortDuration);
+            textMesh.text = "1";
+            yield return new WaitForSeconds(shortDuration);
+            textMesh.text = "";
             
             sequencer.Generate(stage);
             sequencer.Play();
@@ -61,22 +76,29 @@ public class Director : MonoBehaviour
 
             sequencer.EnableAll();
 
-            waiting = true;
-
-            while (waiting) yield return null;
+            while (isIdle)
+            {
+                yield return null;
+            }
 
             sequencer.DisableAll();
 
-            if (!correct)
+            if (isCorrect)
             {
-                lives--;
+                stage++;
+            }
+            else
+            {
+                audioSource.Play();
 
-                GetComponent<AudioSource>().Play();
+                lives--;
 
                 if (lives != 0)
                 {
-                    count.text = lives + (lives > 1 ? " ATTEMPTS" : " ATTEMPT") + "\nREMAINING!";
-                    yield return new WaitForSeconds(2.1f);
+                    var grammar = lives > 1 ? " ATTEMPTS" : " ATTEMPT";
+                    textMesh.text = lives + grammar + "\nREMAINING!";
+
+                    yield return new WaitForSeconds(longDuration);
                 }
                 else
                 {
@@ -85,16 +107,18 @@ public class Director : MonoBehaviour
                     if (highscore < stage)
                     {
                         PlayerPrefs.SetInt("HIGHSCORE", (int)stage);
-                        count.text = "NEW HIGHSCORE!";
+                        textMesh.text = "NEW HIGHSCORE!";
                     }
                     else
                     {
-                        count.text = "YOU LOSE!";
+                        textMesh.text = "YOU LOSE!";
                     }
 
-                    yield return new WaitForSeconds(2.1f);
-                    count.text = "YOU REACHED\nSTAGE " + stage + "!";
-                    yield return new WaitForSeconds(2.1f);
+                    yield return new WaitForSeconds(longDuration);
+
+                    textMesh.text = "YOU REACHED\nSTAGE " + stage + "!";
+
+                    yield return new WaitForSeconds(longDuration);
 
                     while (fadeAlpha < 1)
                     {
@@ -105,25 +129,21 @@ public class Director : MonoBehaviour
                     SceneManager.LoadScene("Menu");
                 }
             }
-            else
-            {
-                yield return new WaitForSeconds(2.1f);
-                stage++;
-            }
+
+            yield return new WaitForSeconds(longDuration);
         }
     }
 
-    public void Guess(Pad pad)
+    public void Attempt(Pad pad)
     {
-        Sequencer.Result result = sequencer.Guess(pad);
-
-        switch (result)
+        switch (sequencer.Guess(pad))
         {
             case Sequencer.Result.COMPLETE:
-                waiting = false;
+                isIdle = false;
                 break;
+
             case Sequencer.Result.INCORRECT:
-                waiting = correct = false;
+                isIdle = isCorrect = false;
                 break;
         }
     }

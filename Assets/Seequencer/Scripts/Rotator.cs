@@ -1,27 +1,26 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Rotator : MonoBehaviour
 {
     public Vector3 from = new Vector3( 10.0f,  10.0f, 0.0f);
     public Vector3 to   = new Vector3(-10.0f, -10.0f, 0.0f);
 
-    private float seed = 0;
+    private float time = 0;
 
     private void Awake()
     {
-        seed = Random.Range(float.Epsilon, 1);
+        time = Random.Range(float.Epsilon, 1.0f);
     }
 
     private void Update()
     {
-        seed += Time.deltaTime;
+        time += Time.deltaTime;
 
         Quaternion alpha = Quaternion.Euler(from);
         Quaternion beta  = Quaternion.Euler(to);
 
-        float lerp = 0.5f * (1.0f + Mathf.Sin(Mathf.PI * seed));
-        transform.localRotation = Quaternion.Lerp(alpha, beta, lerp);
+        float delta = 0.5f * (1.0f + Mathf.Sin(Mathf.PI * time));
+
+        transform.localRotation = Quaternion.Lerp(alpha, beta, delta);
     }
 }
