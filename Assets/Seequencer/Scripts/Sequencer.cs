@@ -3,23 +3,24 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Sequencer : MonoBehaviour
+[DisallowMultipleComponent]
+
+public class Sequencer : Playable
 {
     public AudioClip[] audioClips = new AudioClip[6];
 
-    public Color correct   = Color.HSVToRGB(0.3f, 1, 1);
     public Color incorrect = Color.HSVToRGB(1.0f, 1, 1);
     public Color[] rainbow = { /* Seequencer rainbow: */
-        Color.HSVToRGB(0.1f, 1, 1),
-        Color.HSVToRGB(0.2f, 1, 1),
-        Color.HSVToRGB(0.3f, 1, 1),
-        Color.HSVToRGB(0.4f, 1, 1),
-        Color.HSVToRGB(0.5f, 1, 1),
-        Color.HSVToRGB(0.6f, 1, 1),
-        Color.HSVToRGB(0.7f, 1, 1),
-        Color.HSVToRGB(0.8f, 1, 1),
-        Color.HSVToRGB(0.9f, 1, 1),
-        Color.HSVToRGB(1.0f, 1, 1)
+        Color.HSVToRGB(0.1f, 1, 1), /* S */
+        Color.HSVToRGB(0.2f, 1, 1), /* E */
+        Color.HSVToRGB(0.3f, 1, 1), /* E */
+        Color.HSVToRGB(0.4f, 1, 1), /* Q */
+        Color.HSVToRGB(0.5f, 1, 1), /* U */
+        Color.HSVToRGB(0.6f, 1, 1), /* E */
+        Color.HSVToRGB(0.7f, 1, 1), /* N */
+        Color.HSVToRGB(0.8f, 1, 1), /* C */
+        Color.HSVToRGB(0.9f, 1, 1), /* E */
+        Color.HSVToRGB(1.0f, 1, 1)  /* R */
     };
 
     [Range(float.Epsilon, 3.0f)] public float duration = 2.0f;
@@ -60,7 +61,7 @@ public class Sequencer : MonoBehaviour
         }
     }
 
-    public void PlayAll(Color color, float duration)
+    public void PreviewAll(Color color, float duration)
     {
         foreach (Pad pad in register)
         {
@@ -82,29 +83,26 @@ public class Sequencer : MonoBehaviour
             Pad pad = register[UnityEngine.Random.Range(0, register.Count)];
             AudioClip audioClip = audioClips[UnityEngine.Random.Range(0, audioClips.Length)];
             Color color = rainbow[UnityEngine.Random.Range(0, rainbow.Length)];
+
             sequence.Add(new Tuple<Pad, AudioClip, Color>(pad, audioClip, color));
         }
     }
 
-    public bool isPlaying { get; private set; } = false;
-
-    public void Play()
+    protected override IEnumerator IEPlay()
     {
-        if (!isPlaying)
+        foreach (var tuple in sequence)
         {
-            isPlaying = StartCoroutine(IEPlay()) != null ? true : false;
-        }
-    }
+            Pad pad = tuple.Item1;
 
-    private IEnumerator IEPlay()
-    {
-        foreach (var i in sequence)
-        {
-            i.Item1.Play(i.Item2, i.Item3, duration);
-            while (i.Item1.isPlaying) yield return null;
+            pad.Play(tuple.Item2, tuple.Item3, duration);
+
+            while (pad.isPlaying)
+            {
+                yield return null;
+            }
+
             yield return new WaitForSeconds(1);
         }
-        isPlaying = false;
     }
 
     public enum Result
@@ -120,14 +118,10 @@ public class Sequencer : MonoBehaviour
         {
             pad.Play(sequence[index].Item2, sequence[index].Item3, duration);
 
-            index++;
-
-            if (index < sequence.Count) return Result.CORRECT;
-
-            return Result.COMPLETE;
+            return ++index < sequence.Count ? Result.CORRECT : Result.COMPLETE;
         }
 
-        PlayAll(incorrect, duration); // change to wrong audio
+        PreviewAll(incorrect, duration);
 
         return Result.INCORRECT;
     }

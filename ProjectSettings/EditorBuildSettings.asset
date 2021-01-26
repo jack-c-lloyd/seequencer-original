@@ -6,9 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Seequencer/Scenes/Menu.unity
+    path: Assets/Seequencer/Scenes/Scene_0.unity
     guid: c1f9a3eabc6a641269cc2cf15ae9cc46
   - enabled: 1
-    path: Assets/Seequencer/Scenes/Demo.unity
+    path: Assets/Seequencer/Scenes/Scene_1.unity
     guid: 51b17fc95e4c74a12b788b8a85d35cc4
   m_configObjects: {}

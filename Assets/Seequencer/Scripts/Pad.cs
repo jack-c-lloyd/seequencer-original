@@ -20,6 +20,8 @@ public class Pad : Interactable
         audioSource = GetComponent<AudioSource>();
         meshRenderer = GetComponent<MeshRenderer>();
         director = FindObjectOfType<Director>();
+
+        Sequencer.Register(this);
     }
 
     public bool isPlaying { get; private set; } = false;
@@ -47,6 +49,6 @@ public class Pad : Interactable
 
     public override void Interact()
     {
-        director.Attempt(this);
+        Director.Instance.Attempt(this);
     }
 }

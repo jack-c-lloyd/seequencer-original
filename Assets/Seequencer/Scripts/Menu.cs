@@ -49,7 +49,7 @@ public class Menu : Interactable
             yield return null;
         }
 
-        SceneManager.LoadScene("Demo");
+        SceneManager.LoadScene("Scene_1");
     }
 
     private void OnGUI()

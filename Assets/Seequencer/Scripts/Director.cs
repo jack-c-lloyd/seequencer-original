@@ -6,24 +6,41 @@ using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(AudioSource))]
 
-public class Director : MonoBehaviour
+public class Director : Singleton<Director>
 {
+    [Range(0, 10)] public uint countdown = 3;
+
     [Range(float.Epsilon, 2.1f)] public float shortDuration = 0.7f;
     [Range(float.Epsilon, 2.1f)] public float mediumDuration = 1.4f;
     [Range(float.Epsilon, 2.1f)] public float longDuration = 2.1f;
 
-    public TextMesh textMesh;
-    public Sequencer sequencer;
-    public Texture2D fadeImage;
+    public string[] winMessages = new string[3] {
+        "NEW HIGHSCORE!",
+        "CONGRATULATIONS!",
+        "PERSONAL BEST!"
+    };
 
-    private float fadeAlpha = 1;
-    private bool isIdle = false;
+    public string[] loseMessages = new string[3] {
+        "YOU LOSE!",
+        "BAD LUCK!",
+        "TRY AGAIN!"
+    };
+
+    public TextMesh countdownText;
+
+    private bool isAttempting = false;
     private bool isCorrect = true;
+    private uint attempts;
+    private uint stage;
 
+    private const string HIGHSCORE = "HIGHSCORE";
+
+    private Sequencer sequencer;
     private AudioSource audioSource;
 
     private void Awake()
     {
+        sequencer = FindObjectOfType<Sequencer>();
         audioSource = GetComponent<AudioSource>();
     }
 
@@ -34,40 +51,30 @@ public class Director : MonoBehaviour
 
     private IEnumerator Direct()
     {
-        uint lives = 3;
-        uint stage = 1;
+        attempts = 3;
+        stage = 1;
 
         sequencer.DisableAll();
 
-        if (!PlayerPrefs.HasKey("HIGHSCORE"))
+        if (!PlayerPrefs.HasKey(HIGHSCORE))
         {
-            PlayerPrefs.SetInt("HIGHSCORE", 0);
+            PlayerPrefs.SetInt(HIGHSCORE, 0);
         }
 
-        textMesh.text = "- HIGHSCORE -\nSTAGE " + PlayerPrefs.GetInt("HIGHSCORE") + "!";
+        countdownText.text = "- HIGHSCORE -\nSTAGE " + PlayerPrefs.GetInt(HIGHSCORE) + "!";
 
-        while (fadeAlpha > float.Epsilon)
-        {
-            fadeAlpha -= Time.deltaTime;
-            yield return null;
-        }
-
-        yield return new WaitForSeconds(longDuration);
+        yield return FadeIn(1.0f);
 
         while (true)
         {
-            isCorrect = true;
-            isIdle = true;
+            yield return new WaitForSeconds(longDuration);
 
-            textMesh.text = "STAGE " + stage + "!";
+            isCorrect = true;
+
+            countdownText.text = "STAGE " + stage + "!";
             yield return new WaitForSeconds(mediumDuration);
-            textMesh.text = "3";
-            yield return new WaitForSeconds(shortDuration);
-            textMesh.text = "2";
-            yield return new WaitForSeconds(shortDuration);
-            textMesh.text = "1";
-            yield return new WaitForSeconds(shortDuration);
-            textMesh.text = "";
+
+            yield return Countdown(countdown);
             
             sequencer.Generate(stage);
             sequencer.Play();
@@ -76,7 +83,9 @@ public class Director : MonoBehaviour
 
             sequencer.EnableAll();
 
-            while (isIdle)
+            isAttempting = true;
+
+            while (isAttempting)
             {
                 yield return null;
             }
@@ -91,66 +100,103 @@ public class Director : MonoBehaviour
             {
                 audioSource.Play();
 
-                lives--;
-
-                if (lives != 0)
+                if (--attempts != 0)
                 {
-                    var grammar = lives > 1 ? " ATTEMPTS" : " ATTEMPT";
-                    textMesh.text = lives + grammar + "\nREMAINING!";
-
-                    yield return new WaitForSeconds(longDuration);
+                    var grammar = attempts > 1 ? " ATTEMPTS" : " ATTEMPT";
+                    countdownText.text = attempts + grammar + "\nREMAINING!";
                 }
                 else
                 {
-                    int highscore = PlayerPrefs.GetInt("HIGHSCORE");
-
-                    if (highscore < stage)
+                    if (PlayerPrefs.GetInt(HIGHSCORE) < stage)
                     {
-                        PlayerPrefs.SetInt("HIGHSCORE", (int)stage);
-                        textMesh.text = "NEW HIGHSCORE!";
+                        PlayerPrefs.SetInt(HIGHSCORE, (int)stage);
+                        countdownText.text = winMessages[UnityEngine.Random.Range(0, winMessages.Length)];
                     }
                     else
                     {
-                        textMesh.text = "YOU LOSE!";
+                        countdownText.text = loseMessages[UnityEngine.Random.Range(0, loseMessages.Length)];
                     }
 
                     yield return new WaitForSeconds(longDuration);
 
-                    textMesh.text = "YOU REACHED\nSTAGE " + stage + "!";
+                    countdownText.text = "YOU REACHED\nSTAGE " + stage + "!";
 
                     yield return new WaitForSeconds(longDuration);
 
-                    while (fadeAlpha < 1)
-                    {
-                        fadeAlpha += Time.deltaTime;
-                        yield return null;
-                    }
+                    yield return FadeOut(1.0f);
 
-                    SceneManager.LoadScene("Menu");
+                    SceneManager.LoadScene("Scene_0");
                 }
             }
-
-            yield return new WaitForSeconds(longDuration);
         }
     }
 
     public void Attempt(Pad pad)
     {
+        if (!isAttempting) return;
+
         switch (sequencer.Guess(pad))
         {
             case Sequencer.Result.COMPLETE:
-                isIdle = false;
+                isAttempting = false;
                 break;
 
             case Sequencer.Result.INCORRECT:
-                isIdle = isCorrect = false;
+                isAttempting = isCorrect = false;
                 break;
         }
     }
 
+    private IEnumerator Countdown(uint count)
+    {
+        for ( /* ... */ ; count > 0; count--)
+        {
+            countdownText.text = count.ToString();
+            yield return new WaitForSeconds(shortDuration);
+        }
+
+        countdownText.text = "";
+    }
+
+    public Texture2D fadeImage;
+    
+    public float fadeAlpha { get; private set; }  = 1.0f;
+
+    private IEnumerator FadeIn(float duration)
+    {
+        duration = duration > float.Epsilon ? duration : float.Epsilon;
+
+        fadeAlpha = 1.0f;
+
+        while (fadeAlpha > float.Epsilon)
+        {
+            fadeAlpha -= Time.deltaTime / duration;
+            yield return null;
+        }
+
+        fadeAlpha = 0.0f;
+    }
+
+    private IEnumerator FadeOut(float duration)
+    {
+        duration = duration > float.Epsilon ? duration : float.Epsilon;
+
+        fadeAlpha = 0.0f;
+
+        while (fadeAlpha < 1.0f)
+        {
+            fadeAlpha += Time.deltaTime / duration;
+            yield return null;
+        }
+
+        fadeAlpha = 1.0f;
+    }
+
     private void OnGUI()
     {
+        Rect rect = new Rect(0, 0, Screen.width, Screen.height);
+
         GUI.color = new Color(1.0f, 1.0f, 1.0f, fadeAlpha);
-        GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), fadeImage, ScaleMode.StretchToFill);
+        GUI.DrawTexture(rect, fadeImage, ScaleMode.StretchToFill);
     }
 }
